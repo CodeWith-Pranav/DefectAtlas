@@ -1,5 +1,7 @@
 # DefectAtlas
 
+Live demo: https://defectatlas.vercel.app/
+
 A non-commercial visual anomaly-inspection lab with a trained denoising convolutional autoencoder, a frozen pretrained-feature baseline, response heatmaps and a browser-local human review trail. Category: **MVTec AD bottle only**.
 
 ## Run
