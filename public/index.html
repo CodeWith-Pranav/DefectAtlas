@@ -1,0 +1,1785 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="DefectAtlas: a reproducible visual anomaly inspection lab with CNNs, heatmaps and a local human review queue."
+    />
+    <title>DefectAtlas — Inspect the unusual</title>
+    <style>
+      :root {
+        --bg: #f2f4f6;
+        --ink: #182a36;
+        --muted: #6a7a86;
+        --line: #dce3e9;
+        --accent: #167979;
+        --dark: #112431;
+        --lime: #c1ef80;
+        --orange: #cb7b2e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        font:
+          14px/1.55 system-ui,
+          -apple-system,
+          sans-serif;
+        color: var(--ink);
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.55;
+      }
+      a {
+        color: var(--accent);
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #8fc366;
+        outline-offset: 3px;
+      }
+      aside {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 212px;
+        background: var(--dark);
+        padding: 28px 20px;
+        display: flex;
+        flex-direction: column;
+        color: #fff;
+      }
+      .brand {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        text-decoration: none;
+        color: white;
+      }
+      .brand span {
+        color: var(--lime);
+      }
+      .micro {
+        font-size: 10px;
+        letter-spacing: 1.7px;
+        text-transform: uppercase;
+      }
+      .sidebar-sub {
+        color: #8aa4b4;
+        margin: 3px 0 40px;
+      }
+      .nav {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        color: #b5c5ce;
+        padding: 13px 14px;
+        border: 0;
+        border-radius: 6px;
+        margin: 6px 0;
+      }
+      .nav.active {
+        background: #29414d;
+        color: #e4ffbb;
+      }
+      .aside-foot {
+        margin-top: auto;
+        color: #8fa6b3;
+        font-size: 11px;
+        padding-top: 20px;
+        border-top: 1px solid #2f4550;
+      }
+      .aside-foot b {
+        color: var(--lime);
+        display: block;
+        margin-bottom: 10px;
+      }
+      .aside-foot a {
+        color: #a8d4d0;
+      }
+      main {
+        margin-left: 212px;
+        padding: 0 30px 30px;
+        max-width: 1660px;
+      }
+      header {
+        height: 72px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+        gap: 15px;
+      }
+      .badge {
+        border: 1px solid #d5e2df;
+        border-radius: 30px;
+        padding: 5px 11px;
+        font-size: 10px;
+        background: #ebf2ef;
+        white-space: nowrap;
+      }
+      .badge::before {
+        content: "●";
+        color: var(--accent);
+        margin-right: 7px;
+      }
+      .hero {
+        padding: 32px 0 24px;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: center;
+      }
+      h1 {
+        font-size: 35px;
+        letter-spacing: -1.2px;
+        line-height: 1.2;
+        margin: 10px 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      p {
+        color: var(--muted);
+        margin: 8px 0;
+      }
+      .hero p {
+        max-width: 680px;
+      }
+      .button {
+        border: 0;
+        border-radius: 5px;
+        padding: 11px 17px;
+        background: var(--accent);
+        color: white;
+        font-weight: 650;
+      }
+      .button.secondary {
+        background: white;
+        border: 1px solid var(--line);
+        color: var(--ink);
+      }
+      .button.small {
+        font-size: 11px;
+        padding: 7px 10px;
+      }
+      .notice {
+        border-left: 3px solid #c29d57;
+        background: #faf3e6;
+        padding: 11px 15px;
+        font-size: 11px;
+        color: #806334;
+        margin-bottom: 20px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        margin-bottom: 18px;
+        padding: 21px;
+      }
+      .panel h2 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .panel h3 {
+        font-size: 13px;
+        margin: 0;
+      }
+      .panel-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+      .panel-top p {
+        font-size: 12px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: end;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      .toolbar label {
+        min-width: 180px;
+        flex: 1;
+      }
+      .toolbar .button {
+        white-space: nowrap;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 650;
+        color: #516674;
+      }
+      input,
+      select,
+      textarea {
+        background: #fff;
+        border: 1px solid #cdd8e0;
+        padding: 9px 10px;
+        border-radius: 5px;
+        color: var(--ink);
+        min-width: 0;
+        width: 100%;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: 2px solid #83bcb9;
+        outline-offset: 1px;
+      }
+      input[type="range"] {
+        padding: 5px 0;
+        accent-color: var(--accent);
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .error {
+        color: #a53737;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+        gap: 18px;
+      }
+      .source-panel {
+        padding: 18px;
+      }
+      .upload {
+        border: 1px dashed #aabcc6;
+        border-radius: 6px;
+        padding: 18px;
+        text-align: center;
+        background: #f8faf9;
+        margin-bottom: 20px;
+      }
+      .upload b {
+        font-size: 13px;
+      }
+      .upload input {
+        font-size: 10px;
+        margin: 12px 0 0;
+        background: transparent;
+        padding: 0;
+        border: 0;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+      .sample {
+        padding: 5px;
+        background: #f2f5f6;
+        border: 1px solid #e2e7ea;
+        border-radius: 5px;
+        color: var(--muted);
+        font-size: 9px;
+        text-align: left;
+      }
+      .sample img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 3px;
+        margin-bottom: 4px;
+      }
+      .sample.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+      .inspection {
+        padding: 0;
+        overflow: hidden;
+      }
+      .image-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+        gap: 15px;
+      }
+      .image-head b {
+        font-size: 13px;
+      }
+      .image-stage {
+        padding: 24px;
+        background: #e9edef;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .image-frame {
+        min-width: 0;
+      }
+      .image-frame h3 {
+        font-size: 10px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #697d89;
+        margin: 0 0 10px;
+      }
+      .canvas-shell {
+        background: #d7dfe2;
+        border: 1px solid #cbd6da;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+        aspect-ratio: 1;
+      }
+      .canvas-shell canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .placeholder {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 30px;
+        text-align: center;
+        color: #7e929d;
+        font-size: 12px;
+      }
+      .overlay-controls {
+        padding: 13px 20px;
+        background: #f8fafb;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .overlay-controls label {
+        flex: 1;
+        max-width: 260px;
+      }
+      .gradient {
+        height: 8px;
+        min-width: 70px;
+        width: 110px;
+        background: linear-gradient(90deg, transparent, #f0c86d, #e64e37);
+        border-radius: 5px;
+      }
+      .evidence {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: minmax(130px, 1fr) 2fr;
+        gap: 22px;
+        border-top: 1px solid var(--line);
+      }
+      .score {
+        font-size: 33px;
+        font-weight: 750;
+        letter-spacing: -1px;
+        margin: 6px 0;
+      }
+      .tag {
+        display: inline-block;
+        padding: 4px 7px;
+        font-size: 10px;
+        font-weight: 750;
+        border-radius: 4px;
+        background: #e2f0e9;
+        color: #246951;
+      }
+      .tag.flag {
+        background: #ffead1;
+        color: #8d571c;
+      }
+      .evidence p {
+        font-size: 11px;
+      }
+      .facts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        font-size: 11px;
+      }
+      .facts strong {
+        display: block;
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .image-note {
+        font-size: 10px;
+        color: #6e828c;
+        padding: 13px 20px;
+        border-top: 1px solid var(--line);
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 18px;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 18px;
+        background: white;
+      }
+      .stat small {
+        font-size: 10px;
+        color: var(--muted);
+        display: block;
+      }
+      .stat b {
+        display: block;
+        font-size: 27px;
+        letter-spacing: -0.8px;
+        margin: 5px 0;
+      }
+      .stat span {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 11px;
+      }
+      th {
+        font-size: 9px;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+        padding: 11px;
+        background: #f3f6f7;
+      }
+      td {
+        padding: 12px 11px;
+        border-bottom: 1px solid #e8edef;
+        vertical-align: top;
+      }
+      td img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .policy {
+        padding: 13px 16px;
+        background: #eef5f4;
+        border-radius: 5px;
+        font-size: 11px;
+        color: #47696a;
+        margin-top: 16px;
+      }
+      .empty {
+        padding: 35px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .chart {
+        width: 100%;
+        height: auto;
+        max-height: 240px;
+      }
+      .review-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: end;
+      }
+      .review-controls label {
+        flex: 1;
+      }
+      .review-form {
+        border: 1px solid var(--line);
+        padding: 18px;
+        border-radius: 6px;
+        background: #f7faf9;
+        margin-top: 18px;
+      }
+      .review-form textarea {
+        height: 70px;
+        resize: vertical;
+      }
+      .review-form .toolbar {
+        margin-top: 14px;
+      }
+      .review-form .toolbar label {
+        min-width: 120px;
+      }
+      .review-list small {
+        font-size: 10px;
+      }
+      .review-form h3 {
+        margin-bottom: 14px;
+      }
+      details {
+        border-bottom: 1px solid var(--line);
+        padding: 12px 0;
+      }
+      summary {
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 650;
+      }
+      details p {
+        font-size: 12px;
+      }
+      code {
+        font-size: 10px;
+        background: #edf2f3;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      .metrics {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .loading {
+        padding: 55px;
+        text-align: center;
+        color: var(--muted);
+      }
+      footer {
+        font-size: 10px;
+        color: #8797a0;
+        padding-top: 8px;
+      }
+      .review-banner {
+        font-size: 11px;
+        background: #fff5e7;
+        padding: 12px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .history {
+        font-size: 10px;
+        color: var(--muted);
+        padding: 10px 0;
+      }
+      .status {
+        font-size: 11px;
+        color: var(--accent);
+      }
+      @media (max-width: 1100px) {
+        aside {
+          width: 180px;
+          padding: 25px 16px;
+        }
+        main {
+          margin-left: 180px;
+          padding: 0 20px 24px;
+        }
+        .workspace {
+          grid-template-columns: 180px 1fr;
+        }
+        .source-panel {
+          padding: 13px;
+        }
+        .image-stage {
+          padding: 15px;
+          gap: 12px;
+        }
+        .evidence {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .cards {
+          gap: 10px;
+        }
+        .stat {
+          padding: 13px;
+        }
+        .two {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 760px) {
+        aside {
+          position: static;
+          width: auto;
+          padding: 13px 16px;
+          display: block;
+        }
+        .brand {
+          font-size: 21px;
+        }
+        .sidebar-sub,
+        .aside-foot {
+          display: none;
+        }
+        nav {
+          display: flex;
+          gap: 5px;
+          overflow: auto;
+          margin-top: 10px;
+        }
+        .nav {
+          width: auto;
+          padding: 8px 12px;
+          white-space: nowrap;
+          font-size: 11px;
+          margin: 0;
+        }
+        main {
+          margin-left: 0;
+          padding: 0 14px 25px;
+        }
+        header {
+          height: 53px;
+        }
+        .hero {
+          display: block;
+          padding: 24px 0;
+        }
+        .hero .button {
+          margin-top: 15px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+        .gallery {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .upload {
+          padding: 13px;
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .upload input {
+          max-width: 180px;
+          margin: 0;
+        }
+        .source-panel h2 {
+          margin-bottom: 10px;
+        }
+        .image-head {
+          padding: 14px;
+        }
+        .image-head b {
+          max-width: 60%;
+          overflow-wrap: anywhere;
+        }
+        .image-stage {
+          padding: 12px;
+          gap: 10px;
+        }
+        .evidence {
+          padding: 17px;
+        }
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+        .review-controls {
+          flex-wrap: wrap;
+        }
+        .overlay-controls {
+          flex-wrap: wrap;
+          padding: 10px 15px;
+        }
+        .badge {
+          font-size: 9px;
+        }
+        .panel {
+          padding: 17px;
+        }
+        .inspection {
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="/">Defect<span>Atlas</span></a>
+      <div class="micro sidebar-sub">Visual inspection studio</div>
+      <nav aria-label="Workspace">
+        <button class="nav active" data-view="inspect">
+          ⌖ &nbsp; Inspection studio</button
+        ><button class="nav" data-view="queue">▤ &nbsp; Review queue</button
+        ><button class="nav" data-view="benchmark">◫ &nbsp; Benchmark</button
+        ><button class="nav" data-view="card">◎ &nbsp; Model & data</button>
+      </nav>
+      <div class="aside-foot">
+        <b>Evidence before a verdict.</b>
+        <p>
+          Learn what a CNN considers unusual. Keep the human decision visible.
+        </p>
+        <p>MVTec AD · Bottle category<br />Non-commercial research demo</p>
+        <a
+          href="https://www.mvtec.com/research-teaching/datasets/mvtec-ad"
+          target="_blank"
+          rel="noopener"
+          >Dataset & license ↗</a
+        >
+      </div>
+    </aside>
+    <main>
+      <header>
+        <span>Workspace / <b id="crumb">Inspection studio</b></span
+        ><span class="badge">Bottle inspection · v1.0</span>
+      </header>
+      <section class="hero">
+        <div>
+          <span class="micro" style="color: #638b88"
+            >Convolutional learning. Human judgment.</span
+          >
+          <h1>Inspect the <span>unusual.</span></h1>
+          <p>
+            Compare reconstruction and pretrained visual features. Inspect the
+            heatmap, then record the human review.
+          </p>
+        </div>
+        <button id="export-report" class="button secondary">
+          Export benchmark ↓
+        </button>
+      </section>
+      <div class="notice">
+        <b>Research demonstration.</b> Bottle-category benchmark only. Anomaly
+        scores are not defect probabilities; heatmaps indicate model response,
+        not verified segmentation. No safety or production-quality guarantee.
+      </div>
+      <div id="loading" class="loading" role="status">
+        Loading frozen models and benchmark evidence…
+      </div>
+      <div id="global-error" class="error" role="alert"></div>
+      <div id="app" class="hidden">
+        <section class="panel">
+          <div class="toolbar">
+            <label
+              >Inspection model<select id="model">
+                <option value="feature-v1">
+                  Pretrained MobileNet spatial baseline
+                </option>
+                <option value="ae-v1">
+                  Denoising convolutional autoencoder
+                </option>
+              </select></label
+            ><label
+              >Category<select disabled aria-label="Supported category">
+                <option>Bottle · aligned, top-down views</option>
+              </select></label
+            ><button id="run" class="button" disabled>Run inspection →</button>
+          </div>
+          <p id="model-policy" class="muted"></p>
+          <p id="inspect-error" class="error" role="alert"></p>
+        </section>
+        <section id="view-inspect">
+          <div class="workspace">
+            <section class="panel source-panel">
+              <h2>Image source</h2>
+              <div class="upload">
+                <div>
+                  <b>Inspect your image</b>
+                  <p class="muted">PNG, JPEG or WebP · up to 8 MB</p>
+                </div>
+                <input
+                  id="upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  aria-label="Choose inspection image"
+                />
+              </div>
+              <div class="panel-top" style="margin-bottom: 12px">
+                <div>
+                  <h3>Benchmark examples</h3>
+                  <p>Known test labels. Not fresh validation.</p>
+                </div>
+              </div>
+              <div id="gallery" class="gallery"></div>
+              <p class="muted">
+                Examples are resized MVTec AD test images, CC BY-NC-SA 4.0.
+                Model input: 96 × 96 RGB.
+              </p>
+            </section>
+            <div>
+              <section class="panel inspection">
+                <div class="image-head">
+                  <b id="image-name">Select an image to begin</b
+                  ><span id="source-label" class="muted">No image loaded</span>
+                </div>
+                <div class="image-stage">
+                  <div class="image-frame">
+                    <h3>Normalized model input</h3>
+                    <div class="canvas-shell">
+                      <canvas
+                        id="original"
+                        width="384"
+                        height="384"
+                        aria-label="Normalized input image"
+                      ></canvas>
+                      <div id="original-empty" class="placeholder">
+                        Choose a benchmark example or upload an aligned bottle
+                        image.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="image-frame">
+                    <h3>Anomaly response overlay</h3>
+                    <div class="canvas-shell">
+                      <canvas
+                        id="overlay"
+                        width="384"
+                        height="384"
+                        aria-label="Model anomaly response heatmap"
+                      ></canvas>
+                      <div id="overlay-empty" class="placeholder">
+                        Run inspection to produce a heatmap.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="overlay-controls">
+                  <label
+                    >Overlay opacity<input
+                      id="opacity"
+                      type="range"
+                      min="0"
+                      max="90"
+                      value="60" /></label
+                  ><span>Lower response</span>
+                  <div class="gradient" aria-hidden="true"></div>
+                  <span>Higher response</span>
+                </div>
+                <div id="evidence" class="evidence">
+                  <div>
+                    <span class="tag">AWAITING INSPECTION</span>
+                    <div class="score">—</div>
+                    <span class="muted">score / validation threshold</span>
+                  </div>
+                  <p>
+                    Inference runs on the server using frozen ONNX models.
+                    Results are saved in this browser's review queue when
+                    storage is available.
+                  </p>
+                </div>
+                <div class="image-note">
+                  Heat intensities use a fixed validation-derived scale for the
+                  selected model. The overlay is a coarse 12 × 12 response,
+                  enlarged for inspection.
+                </div>
+              </section>
+              <div id="inspection-status" class="status" role="status"></div>
+            </div>
+          </div>
+        </section>
+        <section id="view-queue" class="hidden">
+          <div id="queue-stats" class="cards"></div>
+          <section class="panel">
+            <div class="panel-top">
+              <div>
+                <h2>Human review queue</h2>
+                <p>
+                  Saved inspection results and an editable review trail. Up to
+                  30 records in this browser.
+                </p>
+              </div>
+              <button class="button secondary small" id="export-queue">
+                Export reviews ↓
+              </button>
+            </div>
+            <div class="review-controls">
+              <label
+                >Filter<select id="queue-filter">
+                  <option value="all">All inspections</option>
+                  <option value="pending">Pending review</option>
+                  <option value="disagree">
+                    Reviewer disagrees with model
+                  </option>
+                </select></label
+              ><label
+                >Search name or notes<input
+                  id="queue-search"
+                  placeholder="Search inspections"
+                  maxlength="80"
+              /></label>
+            </div>
+            <p class="muted">
+              Browser-local storage; no accounts or cross-device sync. New
+              inspections stop being saved at 30 records. Export backups before
+              clearing browser data.
+            </p>
+            <div id="queue-list" class="review-list"></div>
+            <div id="review-editor" class="hidden review-form">
+              <h3 id="review-title">Review inspection</h3>
+              <label
+                >Reviewer notes<textarea
+                  id="review-notes"
+                  maxlength="300"
+                  placeholder="Describe the visible evidence and any uncertainty."
+                ></textarea>
+              </label>
+              <div class="toolbar">
+                <label
+                  >Human decision<select id="review-label">
+                    <option value="pending">Pending</option>
+                    <option value="normal">No visible defect</option>
+                    <option value="defect">Visible defect</option>
+                    <option value="uncertain">
+                      Uncertain / needs another reviewer
+                    </option>
+                  </select></label
+                ><button class="button" id="save-review">Save review</button
+                ><button class="button secondary" id="open-inspection">
+                  View inspection
+                </button>
+              </div>
+              <p id="review-status" class="status" role="status"></p>
+              <div id="review-history" class="history"></div>
+            </div>
+          </section>
+          <section class="panel">
+            <h2>Review disagreement patterns</h2>
+            <p class="muted">
+              Model/reviewer disagreement is not verified benchmark error. A
+              human review can also be wrong.
+            </p>
+            <div id="review-errors"></div>
+          </section>
+        </section>
+        <section id="view-benchmark" class="hidden">
+          <div id="benchmark-cards" class="cards"></div>
+          <section class="panel">
+            <div class="panel-top">
+              <div>
+                <h2>Two approaches, one held-out test set</h2>
+                <p>
+                  Image-level metrics at thresholds fixed from healthy
+                  validation images. Higher AUROC and AP are better.
+                </p>
+              </div>
+            </div>
+            <div id="comparison"></div>
+            <div class="policy">
+              The pretrained baseline is the fixed default, not a test-set
+              winner selected after seeing the results. Neither model was tuned
+              using test defect labels. This defect-heavy test set has 63/83
+              positive images (75.9%); AP depends on that prevalence and is not
+              a production estimate.
+            </div>
+          </section>
+          <div class="two">
+            <section class="panel">
+              <h2>Performance by test condition</h2>
+              <p class="muted">
+                Selected model. A healthy image flagged is a false alarm; a
+                defect not flagged is a miss.
+              </p>
+              <div id="by-type"></div>
+            </section>
+            <section class="panel">
+              <h2>Autoencoder training history</h2>
+              <p class="muted">
+                Training and healthy-validation reconstruction MSE. Lowest
+                validation loss chooses the checkpoint.
+              </p>
+              <div id="loss-chart"></div>
+              <p class="muted">
+                Denoising augmentation is training-only Gaussian noise (σ =
+                0.02). Test images are never used for checkpoint selection.
+              </p>
+            </section>
+          </div>
+        </section>
+        <section id="view-card" class="hidden">
+          <div class="two">
+            <section class="panel">
+              <h2>What the models do</h2>
+              <details open>
+                <summary>Convolutional autoencoder · ae-v1</summary>
+                <p>
+                  A small encoder/decoder learns to reconstruct healthy bottle
+                  images. Reconstruction residuals are averaged into a 12 × 12
+                  map. Unusual pixels may yield greater error, but
+                  reconstruction is not proof of a defect.
+                </p>
+              </details>
+              <details open>
+                <summary>Pretrained visual baseline · feature-v1</summary>
+                <p>
+                  Frozen first four feature blocks of ImageNet-pretrained
+                  MobileNetV3 Small. Healthy training images fit a mean and
+                  diagonal standard deviation at each feature position. Mean
+                  squared standardized feature distances produce the anomaly
+                  map. This is a simple spatial Gaussian baseline, not PatchCore
+                  or a state-of-the-art system.
+                </p>
+              </details>
+              <details>
+                <summary>Scoring, thresholds and heatmap scale</summary>
+                <p>
+                  The image score averages the largest eight values of a 12 × 12
+                  response map. Each model's threshold is the 95th percentile of
+                  held-out healthy-validation image scores. The heatmap uses the
+                  99th percentile of healthy-validation pixel responses as a
+                  fixed scale. Ratios are score divided by threshold, not
+                  probabilities. Display saturation does not imply certainty.
+                </p>
+              </details>
+              <details>
+                <summary>Preprocessing and scope</summary>
+                <p>
+                  Images are decoded as RGB, oriented, stretched to 96 × 96 and
+                  center-sampled with nearest-neighbor resizing. The original
+                  benchmark uses aligned square bottle views. Phone images,
+                  different products, lighting, poses and backgrounds may be far
+                  outside that distribution. Uploads are resized in the browser
+                  before transfer. Gallery examples use preprocessed PNGs to
+                  preserve benchmark inputs.
+                </p>
+              </details>
+              <details>
+                <summary>Serving and latency</summary>
+                <p>
+                  ONNX Runtime executes both trained/exported CNNs in a Node API
+                  on Vercel. There is no external AI API. Reported server time
+                  includes preprocessing and may include cold-start model
+                  loading; it excludes network time. No load-test or production
+                  throughput claim is made.
+                </p>
+              </details>
+            </section>
+            <section class="panel">
+              <h2>Data, evaluation and privacy</h2>
+              <div id="provenance" class="policy"></div>
+              <details open>
+                <summary>
+                  MVTec AD attribution and non-commercial license
+                </summary>
+                <p>
+                  MVTec AD by Paul Bergmann, Michael Fauser, David Sattlegger
+                  and Carsten Steger (CVPR 2019). Dataset and resized examples:
+                  Creative Commons Attribution-NonCommercial-ShareAlike 4.0.
+                  Non-commercial research/portfolio use only. MVTec does not
+                  endorse this demo.
+                </p>
+                <p>
+                  <a
+                    href="https://www.mvtec.com/research-teaching/datasets/mvtec-ad"
+                    target="_blank"
+                    rel="noopener"
+                    >Official dataset page ↗</a
+                  >
+                  ·
+                  <a
+                    href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+                    target="_blank"
+                    rel="noopener"
+                    >License ↗</a
+                  >
+                </p>
+              </details>
+              <details>
+                <summary>Evaluation limits</summary>
+                <p>
+                  Results apply only to this bottle-category experiment at 96 ×
+                  96 resolution. Small defects may disappear. Pixel-level
+                  segmentation quality is not measured. No real production
+                  images, independent-site evaluation or industrial safety
+                  assessment is included. Small healthy-validation and test sets
+                  make false-alarm estimates uncertain.
+                </p>
+              </details>
+              <details>
+                <summary>Stored inspections and privacy</summary>
+                <p>
+                  The server processes uploaded images for the current request
+                  and does not save them. A normalized thumbnail, model response
+                  and review trail can be saved in localStorage in this browser.
+                  Hosting infrastructure may retain request metadata. Do not
+                  upload private, identifying or confidential images to this
+                  public demo. Local review labels are not used to retrain the
+                  models.
+                </p>
+              </details>
+              <p class="muted" id="runtime"></p>
+            </section>
+          </div>
+        </section>
+      </div>
+      <footer>
+        DefectAtlas · Non-commercial visual anomaly research · Bottle category ·
+        Human review remains essential
+      </footer>
+    </main>
+    <script>
+      "use strict";
+      const $ = (s) => document.querySelector(s),
+        esc = (x) =>
+          String(x ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          ),
+        pct = (x) => (x * 100).toFixed(1) + "%";
+      let registry,
+        source = null,
+        result = null,
+        records = [],
+        reviewId = null,
+        requestId = 0,
+        drawId = 0;
+      const titles = {
+        inspect: "Inspection studio",
+        queue: "Review queue",
+        benchmark: "Benchmark",
+        card: "Model & data",
+      };
+      const KEY = "defectatlas-inspections-v1";
+      async function api(path, data) {
+        const r = await fetch(
+          "/api/" + path,
+          data
+            ? {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              }
+            : {},
+        );
+        let body;
+        try {
+          body = await r.json();
+        } catch {
+          throw Error("Unexpected server response. Try again.");
+        }
+        if (!r.ok) throw Error(body.error || "Request failed");
+        return body;
+      }
+      function download(name, data) {
+        const u = URL.createObjectURL(
+          new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          }),
+        );
+        const a = document.createElement("a");
+        a.href = u;
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(u), 1000);
+      }
+      function view(name) {
+        Object.keys(titles).forEach((k) =>
+          $("#view-" + k).classList.toggle("hidden", k !== name),
+        );
+        document.querySelectorAll(".nav").forEach((b) => {
+          b.classList.toggle("active", b.dataset.view === name);
+          b.setAttribute(
+            "aria-current",
+            b.dataset.view === name ? "page" : "false",
+          );
+        });
+        $("#crumb").textContent = titles[name];
+        if (name === "queue") renderQueue();
+      }
+      function table(rows, cols) {
+        return (
+          '<div class="table-wrap"><table><thead><tr>' +
+          cols.map((c) => "<th>" + esc(c[0]) + "</th>").join("") +
+          "</tr></thead><tbody>" +
+          rows
+            .map(
+              (r) =>
+                "<tr>" +
+                cols.map((c) => "<td>" + esc(c[1](r)) + "</td>").join("") +
+                "</tr>",
+            )
+            .join("") +
+          "</tbody></table></div>"
+        );
+      }
+      function loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(Error("Unable to decode this image"));
+          im.src = url;
+        });
+      }
+      async function draw() {
+        if (!source) return;
+        const token = ++drawId,
+          r = result;
+        const image = await loadImage(r?.thumbnail || source.image);
+        if (token !== drawId) return;
+        for (const id of ["original", "overlay"]) {
+          const c = $("#" + id),
+            ctx = c.getContext("2d");
+          ctx.clearRect(0, 0, 384, 384);
+          ctx.drawImage(image, 0, 0, 384, 384);
+        }
+        $("#original-empty").classList.add("hidden");
+        $("#overlay-empty").classList.toggle("hidden", !!r);
+        if (r) {
+          const small = document.createElement("canvas");
+          small.width = small.height = 12;
+          const ctx = small.getContext("2d"),
+            d = ctx.createImageData(12, 12),
+            opacity = Number($("#opacity").value) / 100;
+          for (let i = 0; i < 144; i++) {
+            const v = r.map[i];
+            d.data[i * 4] = 245;
+            d.data[i * 4 + 1] = Math.round(190 * (1 - v) + 45 * v);
+            d.data[i * 4 + 2] = 40;
+            d.data[i * 4 + 3] = Math.round(
+              Math.max(0, (v - 0.12) / 0.88) * opacity * 255,
+            );
+          }
+          ctx.putImageData(d, 0, 0);
+          $("#overlay").getContext("2d").drawImage(small, 0, 0, 384, 384);
+        }
+      }
+      function clearResult() {
+        ++requestId;
+        result = null;
+        $("#inspection-status").textContent = "";
+        $("#evidence").innerHTML =
+          '<div><span class="tag">READY TO INSPECT</span><div class="score">—</div><span class="muted">score / validation threshold</span></div><p>Run the selected model to calculate a new anomaly response.</p>';
+        if (source) draw().catch(showError);
+      }
+      function showError(e) {
+        $("#inspect-error").textContent = e.message;
+      }
+      function choose(s) {
+        source = s;
+        clearResult();
+        $("#inspect-error").textContent = "";
+        $("#image-name").textContent = s.name;
+        $("#source-label").textContent =
+          s.actual === undefined
+            ? "Uploaded image"
+            : "Known benchmark label: " + (s.actual ? "defect" : "healthy");
+        $("#run").disabled = false;
+        document
+          .querySelectorAll(".sample")
+          .forEach((b) =>
+            b.classList.toggle("selected", b.dataset.id === s.id),
+          );
+        view("inspect");
+      }
+      function showEvidence() {
+        if (!result) return;
+        const r = result;
+        $("#evidence").innerHTML =
+          '<div><span class="tag ' +
+          (r.flagged ? "flag" : "") +
+          '">' +
+          (r.flagged ? "FLAGGED FOR REVIEW" : "BELOW ANOMALY THRESHOLD") +
+          '</span><div class="score">' +
+          r.ratio.toFixed(2) +
+          '×</div><span class="muted">score / validation threshold</span></div><div class="facts"><div><span class="muted">Raw anomaly score</span><strong>' +
+          r.score.toPrecision(4) +
+          '</strong></div><div><span class="muted">Frozen threshold</span><strong>' +
+          r.threshold.toPrecision(4) +
+          '</strong></div><div><span class="muted">Model</span><strong>' +
+          esc(r.model) +
+          '</strong></div><div><span class="muted">Server processing</span><strong>' +
+          r.inferenceMs +
+          " ms</strong></div></div>" +
+          (r.warnings.length
+            ? '<p style="color:#99632d">' + esc(r.warnings.join(" ")) + "</p>"
+            : "");
+        draw().catch(showError);
+      }
+      function persist(next) {
+        localStorage.setItem(KEY, JSON.stringify(next));
+        records = next;
+      }
+      async function run() {
+        if (!source) return;
+        const token = ++requestId,
+          submitted = { ...source },
+          model = $("#model").value;
+        $("#run").disabled = true;
+        $("#inspect-error").textContent = "";
+        $("#inspection-status").textContent = "Running frozen CNN inference…";
+        try {
+          const r = await api("inspect", { image: submitted.image, model });
+          if (token !== requestId) return;
+          result = r;
+          showEvidence();
+          if (records.length >= 30) {
+            $("#inspection-status").textContent =
+              "Inspection complete. Queue has 30 records; this result was not saved. Export reviews for backup.";
+            return;
+          }
+          const record = {
+            id: crypto.randomUUID(),
+            created: new Date().toISOString(),
+            name: submitted.name,
+            sourceId: submitted.id || null,
+            knownActual: submitted.actual ?? null,
+            result: r,
+            review: "pending",
+            notes: "",
+            history: [],
+          };
+          try {
+            persist([record, ...records]);
+            $("#inspection-status").textContent =
+              "Inspection saved locally. Open Review queue to record a human decision.";
+          } catch {
+            $("#inspection-status").textContent =
+              "Inspection complete, but browser storage is unavailable or full. The result was not saved.";
+          }
+        } catch (e) {
+          if (token === requestId) {
+            showError(e);
+            $("#inspection-status").textContent =
+              "Inspection failed; no result was saved.";
+          }
+        } finally {
+          $("#run").disabled = !source;
+        }
+      }
+      function renderBenchmark() {
+        const m = registry.models[$("#model").value];
+        $("#model-policy").textContent =
+          "Healthy-validation threshold: " +
+          m.threshold.toPrecision(4) +
+          " · Fixed model version " +
+          $("#model").value +
+          " · Inputs and results stay separate from training.";
+        $("#benchmark-cards").innerHTML = [
+          ["Image AUROC", m.auroc.toFixed(3), "Selected model · bottle test"],
+          [
+            "Average precision",
+            m.averagePrecision.toFixed(3),
+            "Image-level ranking",
+          ],
+          [
+            "Defects detected",
+            m.tp + " / " + (m.tp + m.fn),
+            pct(m.recall) + " recall",
+          ],
+          [
+            "Healthy false alarms",
+            m.fp + " / " + (m.fp + m.tn),
+            pct(m.falsePositiveRate) + " false-positive rate",
+          ],
+        ]
+          .map(
+            (x) =>
+              '<div class="stat"><small>' +
+              x[0] +
+              "</small><b>" +
+              x[1] +
+              "</b><span>" +
+              x[2] +
+              "</span></div>",
+          )
+          .join("");
+        $("#comparison").innerHTML = table(
+          Object.entries(registry.models).map(([k, v]) => ({ k, ...v })),
+          [
+            ["MODEL", (r) => r.k],
+            ["AUROC", (r) => r.auroc.toFixed(3)],
+            ["AP", (r) => r.averagePrecision.toFixed(3)],
+            ["RECALL", (r) => pct(r.recall)],
+            ["FALSE ALARMS", (r) => r.fp + "/" + (r.fp + r.tn)],
+            ["PARAMETERS", (r) => r.parameters.toLocaleString()],
+          ],
+        );
+        $("#by-type").innerHTML = table(
+          Object.entries(m.perType).map(([name, r]) => ({ name, ...r })),
+          [
+            ["CONDITION", (r) => r.name],
+            ["IMAGES", (r) => r.n],
+            ["FLAGGED", (r) => r.flagged],
+            [
+              "MISSED DEFECTS",
+              (r) => (r.name === "good" ? "—" : r.n - r.flagged),
+            ],
+          ],
+        );
+        const rows = registry.history,
+          max = Math.max(...rows.flatMap((r) => [r.trainMSE, r.validationMSE])),
+          path = (k) =>
+            rows
+              .map(
+                (r, i) =>
+                  (i ? "L" : "M") +
+                  (35 + (i / (rows.length - 1)) * 400).toFixed(1) +
+                  "," +
+                  (15 + (1 - r[k] / max) * 170).toFixed(1),
+              )
+              .join(" ");
+        $("#loss-chart").innerHTML =
+          '<svg class="chart" viewBox="0 0 460 230" role="img" aria-label="Autoencoder training and validation loss over epochs"><path d="M35 15V185H435" fill="none" stroke="#cad5da"/><path d="' +
+          path("trainMSE") +
+          '" fill="none" stroke="#167979" stroke-width="2"/><path d="' +
+          path("validationMSE") +
+          '" fill="none" stroke="#cb7b2e" stroke-width="2"/><text x="35" y="205" font-size="10" fill="#6a7a86">Epoch 1</text><text x="385" y="205" font-size="10" fill="#6a7a86">Epoch ' +
+          rows.length +
+          '</text><text x="35" y="225" font-size="10" fill="#167979">Training</text><text x="110" y="225" font-size="10" fill="#cb7b2e">Validation · selected epoch ' +
+          registry.bestEpoch +
+          "</text></svg>";
+      }
+      function disagree(r) {
+        return (
+          (r.review === "normal" && r.result.flagged) ||
+          (r.review === "defect" && !r.result.flagged)
+        );
+      }
+      function renderQueue() {
+        const definite = records.filter((r) =>
+          ["normal", "defect"].includes(r.review),
+        );
+        $("#queue-stats").innerHTML = [
+          ["Saved inspections", records.length, "Browser-local records"],
+          [
+            "Pending review",
+            records.filter((r) => r.review === "pending").length,
+            "Awaiting human decision",
+          ],
+          ["Definite reviews", definite.length, "Normal or defect"],
+          [
+            "Disagreements",
+            records.filter(disagree).length,
+            "Reviewer vs model",
+          ],
+        ]
+          .map(
+            (x) =>
+              '<div class="stat"><small>' +
+              x[0] +
+              "</small><b>" +
+              x[1] +
+              "</b><span>" +
+              x[2] +
+              "</span></div>",
+          )
+          .join("");
+        const filter = $("#queue-filter").value,
+          search = $("#queue-search").value.toLowerCase();
+        const list = records.filter(
+          (r) =>
+            (filter === "all" ||
+              (filter === "pending" && r.review === "pending") ||
+              (filter === "disagree" && disagree(r))) &&
+            (r.name + " " + r.notes).toLowerCase().includes(search),
+        );
+        $("#queue-list").innerHTML = list.length
+          ? '<div class="table-wrap"><table><thead><tr><th>INSPECTION</th><th>MODEL / SCORE RATIO</th><th>REVIEW</th><th>ACTION</th></tr></thead><tbody>' +
+            list
+              .map(
+                (r) =>
+                  "<tr><td>" +
+                  esc(r.name) +
+                  "<br><small>" +
+                  esc(new Date(r.created).toLocaleString()) +
+                  "</small></td><td>" +
+                  esc(r.result.model) +
+                  "<br>" +
+                  r.result.ratio.toFixed(2) +
+                  "× · " +
+                  (r.result.flagged ? "Flagged" : "Below threshold") +
+                  "</td><td>" +
+                  esc(r.review) +
+                  (disagree(r) ? " · disagrees" : "") +
+                  '</td><td><button class="button secondary small review" data-id="' +
+                  esc(r.id) +
+                  '">Review</button></td></tr>',
+              )
+              .join("") +
+            "</tbody></table></div>"
+          : '<div class="empty">No matching inspections. Run an inspection to start the queue.</div>';
+        document
+          .querySelectorAll(".review")
+          .forEach((b) => (b.onclick = () => editReview(b.dataset.id)));
+        $("#review-errors").innerHTML = table(
+          Object.keys(registry.models).map((k) => {
+            const a = definite.filter((r) => r.result.model === k);
+            return {
+              k,
+              n: a.length,
+              falseAlarm: a.filter(
+                (r) => r.review === "normal" && r.result.flagged,
+              ).length,
+              miss: a.filter((r) => r.review === "defect" && !r.result.flagged)
+                .length,
+            };
+          }),
+          [
+            ["MODEL", (r) => r.k],
+            ["DEFINITE REVIEWS", (r) => r.n],
+            ["HUMAN NORMAL / FLAGGED", (r) => r.falseAlarm],
+            ["HUMAN DEFECT / UNFLAGGED", (r) => r.miss],
+          ],
+        );
+      }
+      function editReview(id) {
+        const r = records.find((r) => r.id === id);
+        if (!r) return;
+        reviewId = id;
+        $("#review-editor").classList.remove("hidden");
+        $("#review-title").textContent = r.name;
+        $("#review-label").value = r.review;
+        $("#review-notes").value = r.notes;
+        $("#review-status").textContent = "";
+        $("#review-history").textContent = r.history.length
+          ? "Review history: " +
+            r.history
+              .map(
+                (h) =>
+                  new Date(h.time).toLocaleString() +
+                  ": " +
+                  h.from +
+                  " → " +
+                  h.to,
+              )
+              .join(" | ")
+          : "No review changes recorded yet.";
+      }
+      document
+        .querySelectorAll(".nav")
+        .forEach((b) => (b.onclick = () => view(b.dataset.view)));
+      $("#model").onchange = () => {
+        clearResult();
+        renderBenchmark();
+      };
+      $("#run").onclick = run;
+      $("#opacity").oninput = () => draw().catch(showError);
+      $("#upload").onchange = async () => {
+        const f = $("#upload").files[0];
+        if (!f) return;
+        try {
+          if (f.size > 8000000) throw Error("Choose an image below 8 MB.");
+          if (!["image/jpeg", "image/png", "image/webp"].includes(f.type))
+            throw Error("Choose a PNG, JPEG or WebP image.");
+          const url = URL.createObjectURL(f);
+          try {
+            const im = await loadImage(url);
+            if (im.width * im.height > 16000000)
+              throw Error("Choose an image below 16 megapixels.");
+            const c = document.createElement("canvas");
+            const scale = Math.min(1, 512 / Math.max(im.width, im.height));
+            c.width = Math.round(im.width * scale);
+            c.height = Math.round(im.height * scale);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            choose({
+              name: f.name.slice(0, 100),
+              image: c.toDataURL("image/jpeg", 0.9),
+            });
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        } catch (e) {
+          showError(e);
+        }
+      };
+      $("#queue-filter").onchange = renderQueue;
+      $("#queue-search").oninput = renderQueue;
+      $("#save-review").onclick = () => {
+        const r = records.find((r) => r.id === reviewId);
+        if (!r) return;
+        const label = $("#review-label").value,
+          notes = $("#review-notes").value.trim();
+        const next = records.map((x) =>
+          x.id !== r.id
+            ? x
+            : {
+                ...x,
+                review: label,
+                notes,
+                history: [
+                  ...x.history,
+                  {
+                    time: new Date().toISOString(),
+                    from: x.review,
+                    to: label,
+                    notes,
+                  },
+                ].slice(-20),
+              },
+        );
+        try {
+          persist(next);
+          renderQueue();
+          editReview(r.id);
+          $("#review-status").textContent = "Review saved in this browser.";
+        } catch {
+          $("#review-status").textContent =
+            "Could not save review. Export the queue before clearing browser data.";
+        }
+      };
+      $("#open-inspection").onclick = () => {
+        ++requestId;
+        const r = records.find((r) => r.id === reviewId);
+        if (!r) return;
+        source = {
+          name: r.name,
+          image: r.result.thumbnail,
+          actual: r.knownActual ?? undefined,
+        };
+        $("#model").value = r.result.model;
+        result = r.result;
+        $("#image-name").textContent = r.name;
+        $("#source-label").textContent =
+          "Saved inspection · " + new Date(r.created).toLocaleString();
+        $("#run").disabled = false;
+        renderBenchmark();
+        showEvidence();
+        view("inspect");
+      };
+      $("#export-queue").onclick = () =>
+        download("defectatlas-review-queue.json", {
+          version: registry.version,
+          exported: new Date().toISOString(),
+          records,
+        });
+      $("#export-report").onclick = () => {
+        if (registry) {
+          const { gallery, ...summary } = registry;
+          download("defectatlas-benchmark.json", summary);
+        }
+      };
+      async function init() {
+        try {
+          registry = await api("report");
+          $("#model").value = registry.modelPolicy;
+          $("#gallery").innerHTML = registry.gallery
+            .map(
+              (g) =>
+                '<button class="sample" data-id="' +
+                esc(g.id) +
+                '" aria-label="Load ' +
+                esc(g.id) +
+                '"><img src="' +
+                g.image +
+                '" alt="MVTec bottle ' +
+                esc(g.label) +
+                ' example">' +
+                esc(g.id) +
+                "</button>",
+            )
+            .join("");
+          document.querySelectorAll(".sample").forEach(
+            (b) =>
+              (b.onclick = () => {
+                const g = registry.gallery.find((g) => g.id === b.dataset.id);
+                choose({
+                  id: g.id,
+                  name: g.source,
+                  image: g.image,
+                  actual: g.actual,
+                });
+              }),
+          );
+          try {
+            const saved = JSON.parse(localStorage.getItem(KEY) || "[]");
+            if (Array.isArray(saved))
+              records = saved
+                .filter(
+                  (r) =>
+                    r &&
+                    typeof r.id === "string" &&
+                    typeof r.name === "string" &&
+                    r.name.length <= 100 &&
+                    typeof r.notes === "string" &&
+                    ["pending", "normal", "defect", "uncertain"].includes(
+                      r.review,
+                    ) &&
+                    r.result &&
+                    registry.models[r.result.model] &&
+                    r.result.version === registry.version &&
+                    Number.isFinite(r.result.ratio) &&
+                    Array.isArray(r.result.map) &&
+                    r.result.map.length === 144 &&
+                    r.result.map.every(
+                      (x) => Number.isFinite(x) && x >= 0 && x <= 1,
+                    ) &&
+                    typeof r.result.thumbnail === "string" &&
+                    r.result.thumbnail.startsWith("data:image/png;base64,") &&
+                    Array.isArray(r.history),
+                )
+                .slice(0, 30);
+          } catch {
+            records = [];
+          }
+          renderBenchmark();
+          renderQueue();
+          const d = registry.dataset;
+          $("#provenance").textContent =
+            d.name +
+            " · " +
+            d.training +
+            " healthy training images · " +
+            d.validation +
+            " held-out healthy validation images · " +
+            d.test +
+            " test images (" +
+            d.testHealthy +
+            " healthy, " +
+            d.testDefects +
+            " defects). Seed " +
+            registry.seed +
+            ".";
+          $("#runtime").textContent =
+            "Training: PyTorch " +
+            registry.runtime.torch +
+            ", Python " +
+            registry.runtime.python +
+            ". Checkpoints, ONNX artifacts, split manifest and training source are included in the repository.";
+          $("#loading").classList.add("hidden");
+          $("#app").classList.remove("hidden");
+        } catch (e) {
+          $("#loading").textContent =
+            "Could not load model evidence. Refresh to retry.";
+          $("#global-error").textContent = e.message;
+        }
+      }
+      init();
+    </script>
+  </body>
+</html>
