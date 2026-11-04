@@ -738,11 +738,11 @@
       <a class="brand" href="/">Defect<span>Atlas</span></a>
       <div class="micro sidebar-sub">Visual inspection studio</div>
       <nav aria-label="Workspace">
-        <button class="nav active" data-view="inspect">
+        <button class="nav active" data-view="inspect" disabled>
           ⌖ &nbsp; Inspection studio</button
-        ><button class="nav" data-view="queue">▤ &nbsp; Review queue</button
-        ><button class="nav" data-view="benchmark">◫ &nbsp; Benchmark</button
-        ><button class="nav" data-view="card">◎ &nbsp; Model & data</button>
+        ><button class="nav" data-view="queue" disabled>▤ &nbsp; Review queue</button
+        ><button class="nav" data-view="benchmark" disabled>◫ &nbsp; Benchmark</button
+        ><button class="nav" data-view="card" disabled>◎ &nbsp; Model & data</button>
       </nav>
       <div class="aside-foot">
         <b>Evidence before a verdict.</b>
@@ -1209,6 +1209,7 @@
         setTimeout(() => URL.revokeObjectURL(u), 1000);
       }
       function view(name) {
+        if (!registry) return;
         Object.keys(titles).forEach((k) =>
           $("#view-" + k).classList.toggle("hidden", k !== name),
         );
@@ -1773,6 +1774,7 @@
             ". Checkpoints, ONNX artifacts, split manifest and training source are included in the repository.";
           $("#loading").classList.add("hidden");
           $("#app").classList.remove("hidden");
+          document.querySelectorAll(".nav").forEach((button) => { button.disabled = false; });
         } catch (e) {
           $("#loading").textContent =
             "Could not load model evidence. Refresh to retry.";
